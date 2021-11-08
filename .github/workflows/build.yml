@@ -63,8 +63,8 @@ jobs:
         
     - name: Download and install the SonarScanner
       run: |
-        curl -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
-        unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+        curl -sSLo https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+        unzip sonar-scanner-cli-4.6.2.2472-linux.zip
          
     - name: Cache Sonar Scanner cache
       uses: actions/cache@v2
