@@ -55,7 +55,7 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: |
         # ------------------------------ 
-        curl -L -O ${{ secrets.SONAR_HOST_URL }}/static/cpp/build-wrapper-linux-x86.zip
+        curl -L -O ${{ secrets.SONAR_HOST_URL }}static/cpp/build-wrapper-linux-x86.zip
         unzip -o build-wrapper-linux-x86.zip
         build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir ${{runner.workspace}}/cfamily-output ninja
         # ------------------------------ 
