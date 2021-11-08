@@ -1,38 +1,88 @@
-name: Build
-on:
-  push:
-    branches:
-      - devel # or the name of your main branch
-  pull_request:
-    types: [opened, synchronize, reopened]
+name: Linux builds (basic)
+
+on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: <image ready for your build toolchain>
+    name: ${{matrix.cxx}}, C++${{matrix.std}}, ${{matrix.build_type}}
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        cxx:
+          - g++-10
+          - clang++-9
+          - clang++-10
+        build_type: [Debug]
+        std: [14]
+        include:
+        # cannot be installed on ubuntu-20.04 be default?
+          - cxx: g++-10
+            other_pkgs: g++-10
+          - cxx: clang++-9
+            other_pkgs: clang-9
+          - cxx: clang++-10
+            other_pkgs: clang-10
+          - cxx: clang++-10
+            build_type: Debug
+            std: 17
+            other_pkgs: clang-10
+          - cxx: clang++-10
+            build_type: Release
+            std: 17
+            other_pkgs: clang-10
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+    - uses: actions/checkout@v2
 
-      - name: Download and install the build wrapper, build the project
-        run: |
-          mkdir $HOME/.sonar
-          curl -sSLo $HOME/.sonar/build-wrapper-linux-x86.zip ${{ secrets.SONAR_HOST_URL }}/static/cpp/build-wrapper-linux-x86.zip
-          unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
-          $HOME/.sonar/build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output <your clean build command>
-        env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+    - name: Prepare environment
+      run: sudo apt-get install -y ninja-build ${{matrix.other_pkgs}}
 
-      - name: Download and install the SonarScanner
-        run: |
-          curl -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
-          unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+    - name: Configure build
+      working-directory: ${{runner.workspace}}
+      env:
+        CXX: ${{matrix.cxx}}
+        CXXFLAGS: ${{matrix.cxxflags}}
+      shell: bash
+      run: |
+        cmake -Bbuild -H$GITHUB_WORKSPACE \
+              -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+              -DCMAKE_CXX_STANDARD=${{matrix.std}} \
+              -DCMAKE_CXX_EXTENSIONS=OFF \
+              -DCATCH_DEVELOPMENT_BUILD=ON \
+              -G Ninja
+          
+    - name: Build tests + lib
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        # ------------------------------ 
+        curl -L -O ${{ secrets.SONAR_HOST_URL }}/static/cpp/build-wrapper-linux-x86.zip
+        unzip -o build-wrapper-linux-x86.zip
+        build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir ${{runner.workspace}}/cfamily-output ninja
+        # ------------------------------ 
+        
+        
+    - name: Download and install the SonarScanner
+      run: |
+        curl -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+        unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+         
+    - name: Cache Sonar Scanner cache
+      uses: actions/cache@v2
+      with:
+        key: catch2-cache-${{matrix.cxx}}-${{matrix.std}}-${{matrix.build_type}}
+        path: sonar-cache
 
-      - name: SonarQube analysis
-        uses: SonarSource/sonarqube-scan-action@v1.0.0
-        with:
-          args: -Dsonar.cfamily.build-wrapper-output=bw-output
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+    - name: Scan with SonarQube # ------------------------------
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      shell: bash
+      run: sonar-scanner-4.4.0.2170-linux/bin/sonar-scanner -Dsonar.branch.name=devel -Dsonar.cfamily.build-wrapper-output=${{runner.workspace}}/cfamily-output
+      # --------------------------------------------------------
+
+    - name: Run tests
+      env:
+          CTEST_OUTPUT_ON_FAILURE: 1
+      working-directory: ${{runner.workspace}}/build
+      # Hardcode 2 cores we know are there
+      run: ctest -C ${{matrix.build_type}} -j 2
