@@ -51,13 +51,13 @@ jobs:
               -DCATCH_DEVELOPMENT_BUILD=ON \
               -G Ninja
           
-    - name: Build tests + lib
-      run: |
-        # ------------------------------ 
-        curl -L -O ${{ secrets.SONAR_HOST_URL }}static/cpp/build-wrapper-linux-x86.zip
-        unzip -o build-wrapper-linux-x86.zip
-        build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir ${{runner.workspace}}/cfamily-output ninja
-        # ------------------------------ 
+#     - name: Build tests + lib
+#       run: |
+#         # ------------------------------ 
+#         curl -L -O ${{ secrets.SONAR_HOST_URL }}static/cpp/build-wrapper-linux-x86.zip
+#         unzip -o build-wrapper-linux-x86.zip
+#         build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir ${{runner.workspace}}/cfamily-output ninja
+#         # ------------------------------ 
         
         
     - name: Download and set up sonar-scanner
