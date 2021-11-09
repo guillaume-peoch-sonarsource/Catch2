@@ -64,8 +64,8 @@ jobs:
     - name: Download and install the SonarScanner
       run: |
         mkdir -p $HOME/.sonar 
-        curl -sSLO $HOME/.sonar/sonar-scanner-cli-4.6.2.2472-linux.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
-        unzip $HOME/.sonar/sonar-scanner-cli-4.6.2.2472-linux.zip
+        curl -sSLO $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+        unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
          
     - name: Cache Sonar Scanner cache
       uses: actions/cache@v2
