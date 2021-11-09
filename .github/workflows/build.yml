@@ -51,40 +51,20 @@ jobs:
               -DCATCH_DEVELOPMENT_BUILD=ON \
               -G Ninja
           
-#     - name: Build tests + lib
-#       working-directory: ${{runner.workspace}}/build
-#       run: |
-#         # ------------------------------ 
-#         curl -L -O ${{ secrets.SONAR_HOST_URL }}static/cpp/build-wrapper-linux-x86.zip
-#         unzip -o build-wrapper-linux-x86.zip
-#         build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir ${{runner.workspace}}/cfamily-output ninja
-#         # ------------------------------ 
-        
-        
-    - name: Download and install the build wrapper, build the project
+    - name: Build tests + lib
+      working-directory: ${{runner.workspace}}/build
       run: |
-        mkdir $HOME/.sonar
-        curl -sSLo $HOME/.sonar/build-wrapper-linux-x86.zip \${{ secrets.SONAR_HOST_URL }}/static/cpp/build-wrapper-linux-x86.zip
-        unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
-        $HOME/.sonar/build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir bw-output <your clean build command>
-      env:
-        SONAR_HOST_URL: \${{ secrets.SONAR_HOST_URL }}
-        
-        
-#     - name: Download and set up sonar-scanner
-#       env:
-#         SONAR_SCANNER_DOWNLOAD_URL: https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
-#       run: |
-#         mkdir -p $HOME/.sonar
-#         curl -sSLo $HOME/.sonar/sonar-scanner.zip ${{ env.SONAR_SCANNER_DOWNLOAD_URL }} 
-#         unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
-#         echo "$HOME/.sonar/sonar-scanner-4.6.2.2472-linux/bin" >> $GITHUB_PATH
+        # ------------------------------ 
+        curl -L -O ${{ secrets.SONAR_HOST_URL }}static/cpp/build-wrapper-linux-x86.zip
+        unzip -o build-wrapper-linux-x86.zip
+        build-wrapper-linux-x86/build-wrapper-linux-x86-64 --out-dir ${{runner.workspace}}/cfamily-output ninja
+        # ------------------------------ 
         
         
     - name: Download and install the SonarScanner
       run: |
-        curl -sSLO $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
-        unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+        curl -sSLO https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+        unzip sonar-scanner-cli-4.6.2.2472-linux.zip
          
     - name: Cache Sonar Scanner cache
       uses: actions/cache@v2
@@ -92,12 +72,13 @@ jobs:
         key: catch2-cache-${{matrix.cxx}}-${{matrix.std}}-${{matrix.build_type}}
         path: sonar-cache
 
-    - name: Scan with SonarQube
+    - name: Scan with SonarQube # ------------------------------
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
       shell: bash
       run: sonar-scanner-4.6.2.2472-linux/bin/sonar-scanner -Dsonar.branch.name=devel -Dsonar.cfamily.build-wrapper-output=${{runner.workspace}}/cfamily-output
+      # --------------------------------------------------------
 
     - name: Run tests
       env:
